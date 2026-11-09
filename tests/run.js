@@ -115,7 +115,7 @@ async function main() {
     check(good.status === 200 && good.body.token, 'correct login works (200 + token)');
     const codes = [];
     for (let i = 0; i < 5; i++) codes.push((await call('POST', '/auth/login', { json: { username: 'alice', password: 'wrong' } })).status);
-    check(codes.every((c) => c === 401), 'first 5 wrong passwords get 401 (a correct login earlier did not count)');
+    check(codes.every((c) => c === 401), 'first 5 wrong passwords get 401 (the correct login did not count)');
     const six = await call('POST', '/auth/login', { json: { username: 'alice', password: 'wrong' } });
     check(six.status === 429, '6th wrong attempt gets 429');
     check(six.body.error && six.body.error.code === 'RATE_LIMITED', '429 body has error.code RATE_LIMITED');
