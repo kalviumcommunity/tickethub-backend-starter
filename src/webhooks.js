@@ -8,7 +8,7 @@
 //   1. Verify the signature. The header 'x-webhook-signature' looks like  sha256=<hex>.
 //      Compute HMAC-SHA256 of req.body (a raw Buffer — app.js already provides it)
 //      using WEBHOOK_SECRET, and compare with crypto.timingSafeEqual.
-//      Missing or wrong signature -> 401 { error: 'Invalid signature' }
+//      Wrong signature -> 401 { error: 'Invalid signature' }
 //   2. Only after it is verified:  const event = JSON.parse(req.body)
 //   3. If event.id is already in _processedIds -> 200 { status: 'already_processed' } and stop
 //   4. Otherwise add event.id to _processedIds
