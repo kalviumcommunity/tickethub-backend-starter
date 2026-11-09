@@ -51,7 +51,7 @@ async function main() {
     check(p.status === 403, 'member cannot create an event (403)');
   });
 
-  console.log('\nTask 2 — ownership check (IDOR)');
+  console.log('\nTask 1 — ownership check (IDOR)');
   await safe(async () => {
     check((await call('GET', '/orders/o1', { headers: auth(ALICE) })).status === 200, 'alice reads her own order (200)');
     const r = await call('GET', '/orders/o1', { headers: auth(BOB) });
@@ -61,7 +61,7 @@ async function main() {
     check(n.status === 404 && n.body.error && n.body.error.code === 'NOT_FOUND', 'missing order gets 404 NOT_FOUND');
   });
 
-  console.log('\nTask 3 — idempotent POST /orders');
+  console.log('\nTask 2 — idempotent POST /orders');
   await safe(async () => {
     const body = { eventId: 'e1', qty: 3 };
     const miss = await call('POST', '/orders', { headers: auth(ALICE), json: body });
@@ -76,7 +76,7 @@ async function main() {
     check(c.status === 201 && c.body.id !== a.body.id && orders.length === before + 2, 'a different key creates a new order');
   });
 
-  console.log('\nTask 5 — webhook');
+  console.log('\nTask 3 — webhook');
   await safe(async () => {
     _processedIds.clear(); handled.length = 0;
     const raw = JSON.stringify({ id: 'evt_1', type: 'payment.succeeded', orderId: 'o2' });
@@ -94,7 +94,7 @@ async function main() {
     check(handled.length === 1, 'duplicate event is NOT processed twice');
   });
 
-  console.log('\nTask 6 — cache the event list');
+  console.log('\nTask 4 — cache the event list');
   await safe(async () => {
     cache.clear(); db.queryCount = 0;
     const a = await call('GET', '/events');
@@ -105,19 +105,6 @@ async function main() {
     await call('POST', '/events', { headers: auth(ADMIN), json: { name: 'New Show', price: 100 } });
     const c = await call('GET', '/events');
     check(c.headers['x-cache'] === 'MISS' && c.body.some((e) => e.name === 'New Show'), 'after POST /events the cache is cleared and the new event shows');
-  });
-
-  console.log('\nTask 4 — login rate limit');
-  await safe(async () => {
-    const good = await call('POST', '/auth/login', { json: { username: 'alice', password: 'alice-pass' } });
-    check(good.status === 200 && good.body.token, 'correct login works (200 + token)');
-    const codes = [];
-    for (let i = 0; i < 5; i++) codes.push((await call('POST', '/auth/login', { json: { username: 'alice', password: 'wrong' } })).status);
-    check(codes.every((c) => c === 401), 'first 5 wrong passwords get 401 (the correct login did not count)');
-    const six = await call('POST', '/auth/login', { json: { username: 'alice', password: 'wrong' } });
-    check(six.status === 429, '6th wrong attempt gets 429');
-    check(six.body.error && six.body.error.code === 'RATE_LIMITED', '429 body has error.code RATE_LIMITED');
-    check(Number(six.headers['retry-after']) > 0, '429 has a Retry-After header');
   });
 
   server.close();

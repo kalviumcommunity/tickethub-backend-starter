@@ -1,4 +1,4 @@
-// TASK 6 — Cache the event list (3 marks)
+// TASK 4 — Cache the event list (5 marks)
 //
 // GET /events runs db.getEvents() on EVERY request. The list rarely changes,
 // so cache it (cache-aside), using the helper in ../cache (get / set / del):

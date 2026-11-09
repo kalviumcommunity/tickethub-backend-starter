@@ -5,7 +5,6 @@ const { ACCESS_SECRET } = require('./config');
 const { users, orders } = require('./data');
 const requireAuth = require('./middleware/requireAuth');
 const requireRole = require('./middleware/requireRole');
-const loginLimiter = require('./middleware/loginLimiter');
 const eventsRouter = require('./routes/events');
 const ordersRouter = require('./routes/orders');
 const { handleWebhook } = require('./webhooks');
@@ -17,8 +16,8 @@ app.post('/webhooks/payments', express.raw({ type: 'application/json' }), handle
 
 app.use(express.json());
 
-// Login (limited by your Task 4 limiter)
-app.post('/auth/login', loginLimiter, (req, res) => {
+// Login
+app.post('/auth/login', (req, res) => {
   const { username, password } = req.body || {};
   const user = users.find((u) => u.username === username && u.password === password);
   if (!user) {

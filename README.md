@@ -1,6 +1,6 @@
 # TicketHub Backend
 
-A small Express API for selling event tickets. Six things are missing — finish them.
+A small Express API for selling event tickets. Four things are missing — finish them.
 
 ```bash
 npm install
@@ -12,8 +12,7 @@ Everything runs in memory: no database, no Redis, no keys, no internet.
 
 | File | Task |
 |---|---|
-| `src/middleware/requireRole.js` | 1 |
-| `src/routes/orders.js` | 2 and 3 |
-| `src/middleware/loginLimiter.js` | 4 |
-| `src/webhooks.js` | 5 |
-| `src/routes/events.js` | 6 |
+| `src/middleware/requireRole.js` and `src/routes/orders.js` (GET) | 1 |
+| `src/routes/orders.js` (POST) | 2 |
+| `src/webhooks.js` | 3 |
+| `src/routes/events.js` | 4 |
