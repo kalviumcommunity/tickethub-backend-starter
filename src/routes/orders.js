@@ -4,7 +4,7 @@ const { orders, idempotency, nextOrderId } = require('../data');
 // All routes in this file are already behind requireAuth (see src/app.js),
 // so req.user = { id, role } is always available.
 
-// TASK 1b — Stop users reading other people's orders (part of Task 1)
+// TASK 2 — Stop users reading other people's orders (5 marks)
 //
 // Right now any logged-in user can open ANY order by guessing its id (an IDOR bug).
 // Fix GET /orders/:id:
@@ -18,7 +18,7 @@ router.get('/:id', (req, res) => {
   return res.json(order);
 });
 
-// TASK 2 — Never create the same order twice (5 marks)
+// TASK 3 — Never create the same order twice (5 marks)
 //
 // If the phone loses signal and the app retries "Place order", we must not create
 // two orders. Make POST /orders idempotent using the Idempotency-Key header:

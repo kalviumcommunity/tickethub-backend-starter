@@ -7,12 +7,8 @@ const requireAuth = require('./middleware/requireAuth');
 const requireRole = require('./middleware/requireRole');
 const eventsRouter = require('./routes/events');
 const ordersRouter = require('./routes/orders');
-const { handleWebhook } = require('./webhooks');
 
 const app = express();
-
-// Webhook first: express.raw() must see the untouched body (needed for the signature).
-app.post('/webhooks/payments', express.raw({ type: 'application/json' }), handleWebhook);
 
 app.use(express.json());
 

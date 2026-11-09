@@ -1,4 +1,4 @@
-// TASK 1a — Role gate (part of Task 1, 5 marks)
+// TASK 1 — Role gate (5 marks)
 //
 // requireRole('admin')            -> only admins pass
 // requireRole('admin', 'staff')   -> admins and staff pass

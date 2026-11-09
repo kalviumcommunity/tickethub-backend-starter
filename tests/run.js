@@ -1,14 +1,11 @@
 // GIVEN — do not modify. Run with: npm test
 const http = require('http');
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { ACCESS_SECRET, WEBHOOK_SECRET } = require('../src/config');
+const { ACCESS_SECRET } = require('../src/config');
 const app = require('../src/app');
 const db = require('../src/db');
 const cache = require('../src/cache');
 const { orders } = require('../src/data');
-const { _processedIds } = require('../src/webhooks');
-const { handled } = require('../src/eventHandlers');
 
 const tok = (sub, role) => jwt.sign({ sub, role }, ACCESS_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
 const ALICE = tok('u1', 'member'), BOB = tok('u2', 'member'), ADMIN = tok('u3', 'admin');
@@ -31,8 +28,6 @@ function call(method, path, { headers = {}, json, raw } = {}) {
     req.end();
   });
 }
-const sign = (raw) => 'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(raw).digest('hex');
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let passed = 0, failed = 0;
 function check(ok, msg) { if (ok) { passed++; console.log(`  ✓ ${msg}`); } else { failed++; console.log(`  ✗ ${msg}`); } }
@@ -51,7 +46,7 @@ async function main() {
     check(p.status === 403, 'member cannot create an event (403)');
   });
 
-  console.log('\nTask 1 — ownership check (IDOR)');
+  console.log('\nTask 2 — ownership check (IDOR)');
   await safe(async () => {
     check((await call('GET', '/orders/o1', { headers: auth(ALICE) })).status === 200, 'alice reads her own order (200)');
     const r = await call('GET', '/orders/o1', { headers: auth(BOB) });
@@ -61,7 +56,7 @@ async function main() {
     check(n.status === 404 && n.body.error && n.body.error.code === 'NOT_FOUND', 'missing order gets 404 NOT_FOUND');
   });
 
-  console.log('\nTask 2 — idempotent POST /orders');
+  console.log('\nTask 3 — idempotent POST /orders');
   await safe(async () => {
     const body = { eventId: 'e1', qty: 3 };
     const miss = await call('POST', '/orders', { headers: auth(ALICE), json: body });
@@ -74,24 +69,6 @@ async function main() {
     check(b.status === 201 && b.body.id === a.body.id, 'repeat returns the same status and the same order id');
     const c = await call('POST', '/orders', { headers: { ...auth(ALICE), 'Idempotency-Key': 'k-2' }, json: body });
     check(c.status === 201 && c.body.id !== a.body.id && orders.length === before + 2, 'a different key creates a new order');
-  });
-
-  console.log('\nTask 3 — webhook');
-  await safe(async () => {
-    _processedIds.clear(); handled.length = 0;
-    const raw = JSON.stringify({ id: 'evt_1', type: 'payment.succeeded', orderId: 'o2' });
-    const bad = await call('POST', '/webhooks/payments', { headers: { 'x-webhook-signature': 'sha256=' + '0'.repeat(64) }, raw });
-    check(bad.status === 401, 'wrong signature gets 401');
-    await wait(30);
-    check(handled.length === 0, 'rejected requests are never processed');
-    const ok = await call('POST', '/webhooks/payments', { headers: { 'x-webhook-signature': sign(raw) }, raw });
-    check(ok.status === 200 && ok.body.status === 'received', 'valid signature gets 200 { status: "received" }');
-    await wait(30);
-    check(handled.length === 1 && orders.find((o) => o.id === 'o2').status === 'paid', 'event is processed and the order becomes paid');
-    const dup = await call('POST', '/webhooks/payments', { headers: { 'x-webhook-signature': sign(raw) }, raw });
-    await wait(30);
-    check(dup.status === 200 && dup.body.status === 'already_processed', 'same event again gets "already_processed"');
-    check(handled.length === 1, 'duplicate event is NOT processed twice');
   });
 
   console.log('\nTask 4 — cache the event list');
